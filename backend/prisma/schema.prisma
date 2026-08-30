@@ -1,0 +1,225 @@
+// =============================================================================
+// Prisma Schema – ConvoAssemble Enterprise RBAC & Multi-Tenant Architecture
+// =============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["public"]
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum MeetingStatus {
+  DRAFT
+  LIVE
+  CLOSED
+
+  @@schema("public")
+}
+
+enum MotionStatus {
+  OPEN
+  CLOSED
+
+  @@schema("public")
+}
+
+enum VoteChoice {
+  YES
+  NO
+  ABSTAIN
+
+  @@schema("public")
+}
+
+enum VoteSource {
+  WEB
+  WHATSAPP
+  TELEGRAM
+
+  @@schema("public")
+}
+
+// =============================================================================
+// RBAC MODELS (Roles & Permissions)
+// =============================================================================
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique // SUPERADMIN | ORG_ADMIN | SECRETARY | MEMBER
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  permissions RolePermission[]
+  users       User[]
+
+  @@map("roles")
+  @@schema("public")
+}
+
+model Permission {
+  id        String   @id @default(uuid()) @db.Uuid
+  action    String   // CREATE | READ | UPDATE | DELETE | MANAGE | VOTE
+  resource  String   // ORGANIZATIONS | USERS | PROPERTIES | MEETINGS | MOTIONS | VOTES | ROLES
+  createdAt DateTime @default(now()) @map("created_at")
+
+  roles RolePermission[]
+
+  @@unique([action, resource])
+  @@map("permissions")
+  @@schema("public")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+  @@schema("public")
+}
+
+// =============================================================================
+// TENANT & CORE DATA MODELS
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Organization (Tenant root – Condominium / Association)
+// -----------------------------------------------------------------------------
+model Organization {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  address   String?
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  users      User[]
+  properties Property[]
+  meetings   Meeting[]
+
+  @@map("organizations")
+  @@schema("public")
+}
+
+// -----------------------------------------------------------------------------
+// User (Member, Admin or Superadmin)
+// organizationId is nullable ONLY for global Superadmins
+// -----------------------------------------------------------------------------
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String?  @map("organization_id") @db.Uuid
+  roleId         String   @map("role_id") @db.Uuid
+  dniPassport    String?  @map("dni_passport")
+  fullName       String   @map("full_name")
+  email          String?  @unique
+  phoneNumber    String?  @map("phone_number")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role         Role          @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  properties   Property[]    @relation("PropertyOwner")
+  votes        Vote[]
+
+  @@unique([organizationId, dniPassport])
+  @@map("users")
+  @@schema("public")
+}
+
+// -----------------------------------------------------------------------------
+// Property (Unit in a condominium – holds coefficient/alícuota share)
+// -----------------------------------------------------------------------------
+model Property {
+  id               String   @id @default(uuid()) @db.Uuid
+  organizationId   String   @map("organization_id") @db.Uuid
+  ownerId          String?  @map("owner_id") @db.Uuid
+  coefficientShare Decimal  @map("coefficient_share") @db.Decimal(10, 6)
+  unitIdentifier   String   @map("unit_identifier") // e.g. "Torre A - Apto 302"
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner        User?        @relation("PropertyOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@map("properties")
+  @@schema("public")
+}
+
+// -----------------------------------------------------------------------------
+// Meeting (A formal session held by an Organization)
+// -----------------------------------------------------------------------------
+model Meeting {
+  id                String        @id @default(uuid()) @db.Uuid
+  organizationId    String        @map("organization_id") @db.Uuid
+  title             String
+  status            MeetingStatus @default(DRAFT)
+  startTime         DateTime?     @map("start_time")
+  endTime           DateTime?     @map("end_time")
+  transcriptSummary String?       @map("transcript_summary") @db.Text
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  motions      Motion[]
+
+  @@map("meetings")
+  @@schema("public")
+}
+
+// -----------------------------------------------------------------------------
+// Motion (Agenda item within a Meeting)
+// -----------------------------------------------------------------------------
+model Motion {
+  id              String       @id @default(uuid()) @db.Uuid
+  meetingId       String       @map("meeting_id") @db.Uuid
+  title           String
+  description     String?      @db.Text
+  options         Json         @default("[\"YES\",\"NO\",\"ABSTAIN\"]")
+  status          MotionStatus @default(OPEN)
+  durationSeconds Int?         @map("duration_seconds")
+  openedAt        DateTime?    @map("opened_at")
+  closedAt        DateTime?    @map("closed_at")
+  orderIndex      Int          @default(0) @map("order_index")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  votes   Vote[]
+
+  @@map("motions")
+  @@schema("public")
+}
+
+// -----------------------------------------------------------------------------
+// Vote (Immutable record of a single cast vote)
+// Unique constraint on (motion_id, user_id) enforces one-vote-per-member.
+// -----------------------------------------------------------------------------
+model Vote {
+  id       String     @id @default(uuid()) @db.Uuid
+  motionId String     @map("motion_id") @db.Uuid
+  userId   String     @map("user_id") @db.Uuid
+  choice   VoteChoice
+  castAt   DateTime   @default(now()) @map("cast_at")
+  source   VoteSource @default(WEB)
+
+  motion Motion @relation(fields: [motionId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([motionId, userId])
+  @@map("votes")
+  @@schema("public")
+}

@@ -1,0 +1,128 @@
+##############################################################################
+# docker-compose.yml - ConvoAssemble (Voting & Meeting Minutes SaaS)
+# Local development orchestration.
+# Connects to a CLOUD Supabase project (preferred) or a local Supabase stack.
+# To use local Supabase: run `npx supabase start` separately and point
+# SUPABASE_DB_URL to the local postgres URL provided by the CLI.
+##############################################################################
+
+version: "3.9"
+
+# ---------------------------------------------------------------------------
+# Shared network - all services communicate over this bridge
+# ---------------------------------------------------------------------------
+networks:
+  convo_net:
+    driver: bridge
+
+# ---------------------------------------------------------------------------
+# Named volumes
+# ---------------------------------------------------------------------------
+volumes:
+  node_modules_backend:
+  node_modules_frontend:
+
+# ---------------------------------------------------------------------------
+# Services
+# ---------------------------------------------------------------------------
+services:
+
+  # -------------------------------------------------------------------------
+  # backend - Node.js / TypeScript / Express API
+  # -------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: convo_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: ${DATABASE_URL}
+      DIRECT_URL: ${DIRECT_URL}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend:/app
+      - node_modules_backend:/app/node_modules
+    networks:
+      - convo_net
+    # Regenerate Prisma client at startup so the linux-musl binary is available
+    # even when the host volume mount overwrites node_modules
+    command: sh -c "npx prisma generate && npm run dev"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+
+  # -------------------------------------------------------------------------
+  # frontend - Next.js App Router
+  # NEXT_PUBLIC_* vars are baked into the browser bundle at build time.
+  # NEXT_PUBLIC_API_URL must be reachable from the user's browser (localhost).
+  # -------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: convo_frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      # Windows Docker Desktop: enable FS polling for hot-reload
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - node_modules_frontend:/app/node_modules
+    networks:
+      - convo_net
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: sh -c "npm install --prefer-offline && npm run dev"
+
+  # -------------------------------------------------------------------------
+  # prisma-migrate - one-shot utility to run migrations against Supabase
+  # Usage: docker compose run --rm prisma-migrate
+  # -------------------------------------------------------------------------
+  prisma-migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: convo_prisma_migrate
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DIRECT_URL: ${DIRECT_URL}
+    volumes:
+      - ./backend:/app
+      - node_modules_backend:/app/node_modules
+    networks:
+      - convo_net
+    command: npx prisma migrate deploy
+    profiles:
+      - tools

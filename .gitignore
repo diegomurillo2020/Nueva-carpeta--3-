@@ -1,0 +1,21 @@
+﻿# Node
+node_modules/
+dist/
+coverage/
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Prisma
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
