@@ -47,15 +47,19 @@ export default function NewMeetingPage() {
     setError(null);
 
     try {
-      const headers = getAuthHeaders();
+      const authHeaders = getAuthHeaders();
+      const headers = {
+        ...authHeaders,
+        "Content-Type": "application/json",
+      };
 
       // 1. Create meeting linked to active condominium
       const res = await fetch(`${api}/api/v1/meetings`, {
         method: "POST",
         headers,
         body: JSON.stringify({
-          title,
-          organizationId: activeOrg?.id,
+          title: title.trim(),
+          organizationId: activeOrg?.id || undefined,
         }),
       });
 
@@ -89,7 +93,11 @@ export default function NewMeetingPage() {
       showToast(`✅ Asamblea "${meeting.title}" creada exitosamente en ${activeOrg?.name || "el condominio"}.`);
       setTimeout(() => router.push(`/admin/meetings/${meeting.id}`), 1200);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Error al crear la asamblea.");
+      if (e instanceof TypeError && (e.message.includes("fetch") || e.message.includes("Failed"))) {
+        setError("Error de conexión (Failed to fetch): El servidor backend no responde en " + api + ". Asegúrate de que el backend esté ejecutándose (npm run dev o docker compose up).");
+      } else {
+        setError(e instanceof Error ? e.message : "Error al crear la asamblea.");
+      }
     } finally {
       setLoading(false);
     }

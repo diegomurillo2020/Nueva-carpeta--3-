@@ -14,8 +14,31 @@ const PORT = process.env.PORT ?? 4000;
 // ---------------------------------------------------------------------------
 // Global Middleware
 // ---------------------------------------------------------------------------
-app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL ?? "http://localhost:3000", credentials: true }));
+app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      const allowed = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        process.env.FRONTEND_URL,
+      ].filter(Boolean);
+      if (
+        allowed.includes(origin) ||
+        origin.startsWith("http://localhost:") ||
+        origin.startsWith("http://127.0.0.1:")
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "apikey", "X-Client-Info"],
+  })
+);
 app.use(morgan("dev"));
 app.use(express.json());
 
