@@ -221,7 +221,7 @@ export default function LoginPage() {
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required={mode !== "magiclink"}
+                  required
                   minLength={6}
                 />
               </div>

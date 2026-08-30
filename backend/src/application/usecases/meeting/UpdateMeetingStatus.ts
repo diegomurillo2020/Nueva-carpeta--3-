@@ -2,6 +2,7 @@ import { Meeting, MeetingStatus } from "../../../domain/entities/Meeting";
 import { IMeetingRepository } from "../../../domain/repositories/IMeetingRepository";
 import { IMotionRepository } from "../../../domain/repositories/IMotionRepository";
 import { NotFoundError, UnprocessableError } from "../../../shared/errors/AppErrors";
+import { NotificationService } from "../../services/NotificationService";
 
 export interface UpdateMeetingStatusDTO {
   meetingId:         string;
@@ -41,6 +42,18 @@ export class UpdateMeetingStatusUseCase {
       if (dto.transcriptSummary) extra.transcriptSummary = dto.transcriptSummary;
     }
 
-    return this.meetingRepo.updateStatus(dto.meetingId, dto.organizationId, dto.targetStatus, extra);
+    const updatedMeeting = await this.meetingRepo.updateStatus(dto.meetingId, dto.organizationId, dto.targetStatus, extra);
+
+    if (dto.targetStatus === "CLOSED") {
+      await NotificationService.notifyOrganization(
+        dto.organizationId,
+        "Acta de reunión disponible",
+        `El acta y resumen de la reunión "${meeting.title}" ya están disponibles.`,
+        "MINUTES_READY",
+        meeting.id
+      );
+    }
+
+    return updatedMeeting;
   }
 }

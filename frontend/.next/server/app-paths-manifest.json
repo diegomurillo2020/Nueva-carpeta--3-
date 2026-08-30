@@ -1,7 +1,4 @@
 {
-  "/login/page": "app/login/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/admin/meetings/new/page": "app/admin/meetings/new/page.js",
   "/admin/members/page": "app/admin/members/page.js",
-  "/admin/settings/page": "app/admin/settings/page.js"
+  "/superadmin/page": "app/superadmin/page.js"
 }

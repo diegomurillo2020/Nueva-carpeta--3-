@@ -18,9 +18,10 @@ interface Motion {
 
 interface MotionCardProps {
   motion: Motion;
+  meetingStatus?: "CLOSED" | "DRAFT" | "LIVE" | string;
 }
 
-export default function MotionCard({ motion }: MotionCardProps) {
+export default function MotionCard({ motion, meetingStatus }: MotionCardProps) {
   const { tally, isConnected, isLoading, error } = useMotionTally(
     motion.status === "OPEN" ? motion.id : null
   );

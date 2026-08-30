@@ -206,7 +206,7 @@ export default function SuperadminUsersPage() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: "center", padding: "3rem", color: "var(--text-3)" }}>
-                    No se encontraron usuarios que coincidan con "{search}"
+                    No se encontraron usuarios que coincidan con &quot;{search}&quot;
                   </td>
                 </tr>
               )}

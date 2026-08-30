@@ -127,7 +127,7 @@ export default function SuperadminOrganizationsPage() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={7} style={{ textAlign: "center", padding: "3rem", color: "var(--text-3)" }}>
-                    No se encontraron condominios que coincidan con "{search}"
+                    No se encontraron condominios que coincidan con &quot;{search}&quot;
                   </td>
                 </tr>
               )}

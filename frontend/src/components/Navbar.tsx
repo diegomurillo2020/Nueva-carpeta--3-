@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/lib/AuthContext";
 import { usePathname } from "next/navigation";
+import NotificationBell from "@/components/NotificationBell";
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -72,6 +73,7 @@ export default function Navbar() {
               ＋ Nueva Asamblea
             </a>
 
+            <NotificationBell />
             <div className="nav-divider" aria-hidden="true" />
 
             {user ? (

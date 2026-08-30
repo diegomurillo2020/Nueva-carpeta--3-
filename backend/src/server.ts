@@ -36,6 +36,7 @@ import voteRouter         from "./infrastructure/http/controllers/voteController
 import memberRouter       from "./infrastructure/http/controllers/memberController";
 import webhookRouter      from "./infrastructure/http/controllers/webhookController";
 import superadminRouter   from "./infrastructure/http/controllers/superadminController";
+import notificationRouter from "./infrastructure/http/controllers/notificationController";
 
 app.use("/api/v1/organizations", organizationRouter);
 app.use("/api/v1/meetings",      meetingRouter);
@@ -44,6 +45,7 @@ app.use("/api/v1/votes",         voteRouter);
 app.use("/api/v1/members",       memberRouter);
 app.use("/api/v1/webhooks",      webhookRouter);
 app.use("/api/v1/superadmin",    superadminRouter);
+app.use("/api/v1/notifications", notificationRouter);
 
 // ---------------------------------------------------------------------------
 // Error handler (must be last)

@@ -114,6 +114,7 @@ model Organization {
 
   @@map("organizations")
   @@schema("public")
+  notifications Notification[]
 }
 
 // -----------------------------------------------------------------------------
@@ -140,6 +141,7 @@ model User {
   @@unique([organizationId, dniPassport])
   @@map("users")
   @@schema("public")
+  notifications Notification[]
 }
 
 // -----------------------------------------------------------------------------
@@ -221,5 +223,28 @@ model Vote {
 
   @@unique([motionId, userId])
   @@map("votes")
+  @@schema("public")
+}
+
+// -----------------------------------------------------------------------------
+// Notification (Internal notifications and alerts)
+// -----------------------------------------------------------------------------
+model Notification {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  title          String
+  message        String
+  type           String
+  referenceId    String?  @map("reference_id") @db.Uuid
+  isRead         Boolean  @default(false) @map("is_read")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, organizationId])
+  @@index([userId, isRead])
+  @@map("notifications")
   @@schema("public")
 }
