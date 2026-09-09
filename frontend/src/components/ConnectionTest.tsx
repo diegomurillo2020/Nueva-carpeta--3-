@@ -28,31 +28,7 @@ export default function ConnectionTest() {
 
   return (
     <div className="glass-card conn-test-card">
-      <div className="conn-test-header">
-        <h3 className="conn-test-title">
-          <PlugZap size={18} />
-          Supabase Connection Test
-        </h3>
-        <button
-          id="btn-test-connection"
-          className={`btn ${state === "loading" ? "btn-secondary" : "btn-primary"} btn-sm`}
-          onClick={handleTest}
-          disabled={state === "loading"}
-          aria-live="polite"
-        >
-          {state === "loading" ? (
-            <>
-              <LoaderCircle className="spin" size={15} />
-              Testing…
-            </>
-          ) : (
-            <>
-              <Zap size={15} /> Test Connection
-            </>
-          )}
-        </button>
-      </div>
-
+      
       {/* Connection metadata */}
       <div className="conn-meta">
         <span className="conn-meta-item"><Globe2 size={14} /> <strong>Host:</strong> aws-0-us-east-1.pooler.supabase.com</span>
