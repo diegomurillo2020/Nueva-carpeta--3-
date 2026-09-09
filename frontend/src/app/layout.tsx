@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import { TenantProvider } from "@/lib/TenantContext";
 import Navbar from "@/components/Navbar";
+import AuthGuard from "@/components/AuthGuard";
 
 export const metadata: Metadata = {
   title: { default: "ConvoAssemble Enterprise", template: "%s | ConvoAssemble" },
@@ -27,9 +28,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Navbar />
 
               {/* ── Page content ── */}
-              <main className="main" id="main-content">
-                {children}
-              </main>
+              <AuthGuard>
+                <main className="main" id="main-content">
+                  {children}
+                </main>
+              </AuthGuard>
 
               {/* ── Footer ── */}
               <footer style={{ borderTop: "1px solid var(--border)", padding: "1.25rem 0", marginTop: "auto" }}>

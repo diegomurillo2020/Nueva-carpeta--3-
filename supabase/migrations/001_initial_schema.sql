@@ -23,6 +23,7 @@ CREATE TYPE vote_source    AS ENUM ('WEB', 'WHATSAPP', 'TELEGRAM');
 CREATE TABLE public.organizations (
   id         UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
   name       TEXT        NOT NULL,
+  is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
   -- JSON quorum config, e.g. {"quorumType":"COEFFICIENT","quorumThreshold":0.51}
   settings   JSONB       NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

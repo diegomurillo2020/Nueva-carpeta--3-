@@ -10,13 +10,13 @@ type Step = "details" | "motions" | "review";
 interface MotionDraft {
   title: string;
   description: string;
-  durationSeconds: string;
+  durationSeconds: number;
 }
 
 export default function NewMeetingPage() {
   const router = useRouter();
   const { getAuthHeaders, user } = useAuth();
-  const { activeOrg } = useTenant();
+  const { activeOrg, loading: tenantLoading } = useTenant();
   const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
   const [step, setStep] = useState<Step>("details");
@@ -29,12 +29,12 @@ export default function NewMeetingPage() {
 
   // Step 2 – Motions
   const [motions, setMotions] = useState<MotionDraft[]>([
-    { title: "", description: "", durationSeconds: "120" },
+    { title: "", description: "", durationSeconds: 120 },
   ]);
 
-  const addMotion = () => setMotions((m) => [...m, { title: "", description: "", durationSeconds: "120" }]);
+  const addMotion = () => setMotions((m) => [...m, { title: "", description: "", durationSeconds: 120 }]);
   const removeMotion = (i: number) => setMotions((m) => m.filter((_, idx) => idx !== i));
-  const updateMotion = (i: number, field: keyof MotionDraft, val: string) =>
+  const updateMotion = (i: number, field: keyof MotionDraft, val: string | number) =>
     setMotions((m) => m.map((item, idx) => (idx === i ? { ...item, [field]: val } : item)));
 
   const showToast = (msg: string) => {
@@ -43,6 +43,18 @@ export default function NewMeetingPage() {
   };
 
   const handleCreate = async () => {
+    if (!activeOrg?.id) {
+      setError("No hay un condominio activo seleccionado. Espera a que cargue o vuelve a iniciar sesión.");
+      return;
+    }
+
+    const validMotions = motions.filter((m) => m.title.trim());
+    if (validMotions.length === 0) {
+      setError("Agrega al menos una moción para que la asamblea tenga opciones de votación.");
+      setStep("motions");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -59,7 +71,7 @@ export default function NewMeetingPage() {
         headers,
         body: JSON.stringify({
           title: title.trim(),
-          organizationId: activeOrg?.id || undefined,
+          organizationId: activeOrg.id,
         }),
       });
 
@@ -71,27 +83,28 @@ export default function NewMeetingPage() {
       const { data: meeting } = await res.json();
 
       // 2. Create attached motions if any were specified
-      const validMotions = motions.filter((m) => m.title.trim());
       for (const m of validMotions) {
-        try {
-          await fetch(`${api}/api/v1/motions`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-              meetingId: meeting.id,
-              title: m.title.trim(),
-              options: ["YES", "NO", "ABSTAIN"],
-              durationSeconds: parseInt(m.durationSeconds, 10) || 120,
-              organizationId: activeOrg?.id,
-            }),
-          });
-        } catch (mErr) {
-          console.warn("[NewMeeting] Error creating attached motion:", mErr);
+        const motionRes = await fetch(`${api}/api/v1/motions`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            meetingId: meeting.id,
+            title: m.title.trim(),
+            description: m.description.trim() || undefined,
+            options: ["YES", "NO", "ABSTAIN"],
+            durationSeconds: m.durationSeconds || 120,
+            organizationId: activeOrg.id,
+          }),
+        });
+
+        if (!motionRes.ok) {
+          const motionError = await motionRes.json().catch(() => ({}));
+          throw new Error(motionError.message || `No se pudo crear la moción "${m.title.trim()}".`);
         }
       }
 
       showToast(`✅ Asamblea "${meeting.title}" creada exitosamente en ${activeOrg?.name || "el condominio"}.`);
-      setTimeout(() => router.push(`/admin/meetings/${meeting.id}`), 1200);
+      setTimeout(() => router.push(`/admin/meetings/${meeting.id}?orgId=${encodeURIComponent(activeOrg.id)}`), 1200);
     } catch (e: unknown) {
       if (e instanceof TypeError && (e.message.includes("fetch") || e.message.includes("Failed"))) {
         setError("Error de conexión (Failed to fetch): El servidor backend no responde en " + api + ". Asegúrate de que el backend esté ejecutándose (npm run dev o docker compose up).");
@@ -268,20 +281,52 @@ export default function NewMeetingPage() {
                       onChange={(e) => updateMotion(i, "description", e.target.value)}
                     />
                   </div>
-                  <div className="form-group" style={{ maxWidth: 220 }}>
-                    <label htmlFor={`motion-dur-${i}`} className="form-label">
-                      Duración de Votación (segundos)
-                    </label>
-                    <input
-                      id={`motion-dur-${i}`}
-                      type="number"
-                      className="form-input"
-                      min={30}
-                      max={600}
-                      value={m.durationSeconds}
-                      onChange={(e) => updateMotion(i, "durationSeconds", e.target.value)}
-                    />
-                  </div>
+                <div className="form-group" style={{ maxWidth: 280 }}>
+  <label className="form-label">
+    Duración de Votación
+  </label>
+  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+    {/* Campo Minutos */}
+    <div style={{ flex: 1 }}>
+      <input
+        id={`motion-dur-min-${i}`}
+        type="number"
+        className="form-input"
+        placeholder="Min"
+        min={0}
+        max={10}
+        value={Math.floor((m.durationSeconds || 0) / 60)}
+        onChange={(e) => {
+          const mins = Math.max(0, parseInt(e.target.value) || 0);
+          const secs = (m.durationSeconds || 0) % 60;
+          updateMotion(i, "durationSeconds", mins * 60 + secs);
+        }}
+      />
+      <small style={{ fontSize: '11px', color: '#666' }}>Minutos</small>
+    </div>
+
+    <span>:</span>
+
+    {/* Campo Segundos */}
+    <div style={{ flex: 1 }}>
+      <input
+        id={`motion-dur-sec-${i}`}
+        type="number"
+        className="form-input"
+        placeholder="Seg"
+        min={0}
+        max={59}
+        value={(m.durationSeconds || 0) % 60}
+        onChange={(e) => {
+          const mins = Math.floor((m.durationSeconds || 0) / 60);
+          const secs = Math.min(59, Math.max(0, parseInt(e.target.value) || 0));
+          updateMotion(i, "durationSeconds", mins * 60 + secs);
+        }}
+      />
+      <small style={{ fontSize: '11px', color: '#666' }}>Segundos</small>
+    </div>
+  </div>
+</div>
                 </div>
               </div>
             ))}
@@ -352,7 +397,7 @@ export default function NewMeetingPage() {
             <button
               className="btn btn-primary"
               onClick={handleCreate}
-              disabled={loading}
+              disabled={loading || tenantLoading || !activeOrg?.id}
               id="btn-create-meeting-submit"
             >
               {loading ? (

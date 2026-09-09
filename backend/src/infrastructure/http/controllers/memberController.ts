@@ -9,7 +9,7 @@ import { authenticate, requireAdmin, AuthenticatedRequest, getOrCreateDefaultOrg
 import { validate } from "../middleware/validate";
 import { prisma } from "../../database/prismaClient";
 import { supabaseAdmin } from "../../auth/supabaseAdmin";
-import { BadRequestError, NotFoundError } from "../../../shared/errors/AppErrors";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../../../shared/errors/AppErrors";
 
 const router = Router();
 
@@ -36,7 +36,7 @@ async function resolveOrgId(req: Request): Promise<string> {
 }
 
 // GET /api/v1/members – List all members in the scoped organization
-router.get("/", authenticate, async (req: Request, res: Response) => {
+router.get("/", authenticate, requireAdmin, async (req: Request, res: Response) => {
   const organizationId = await resolveOrgId(req);
 
   const members = await prisma.user.findMany({
@@ -203,16 +203,17 @@ router.post("/:id/reset-password", authenticate, requireAdmin, async (req: Reque
     where: { id: req.params.id, organizationId },
   });
 
-  if (!user || !user.email) throw new NotFoundError("Member with email", req.params.id);
+  if (!user) throw new NotFoundError("Member", req.params.id);
+  if (!user.email) throw new BadRequestError("Este miembro no tiene un correo electrónico asociado.");
 
   const newTempPassword = `ConvoPass${Math.floor(1000 + Math.random() * 9000)}!`;
 
-  try {
-    await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      password: newTempPassword,
-    });
-  } catch (err: any) {
-    console.warn("[MemberController] Supabase password reset notice:", err?.message);
+  const { error: resetError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+    password: newTempPassword,
+  });
+  if (resetError) {
+    console.error("[MemberController] Supabase password reset failed:", resetError.message);
+    throw new ForbiddenError("No fue posible actualizar la contraseña de esta cuenta de acceso.");
   }
 
   res.json({

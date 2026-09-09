@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
+import { Bell, CalendarDays, FileText, Vote } from "lucide-react";
 
 export interface NotificationItem {
   id: string;
@@ -178,13 +179,13 @@ export default function NotificationBell() {
   const getIcon = (type: string) => {
     switch (type) {
       case "VOTE_OPENED":
-        return "🗳️";
+        return <Vote size={16} />;
       case "MEETING_CREATED":
-        return "📅";
+        return <CalendarDays size={16} />;
       case "MINUTES_READY":
-        return "📜";
+        return <FileText size={16} />;
       default:
-        return "🔔";
+        return <Bell size={16} />;
     }
   };
 
@@ -216,7 +217,7 @@ export default function NotificationBell() {
         title="Notificaciones"
         id="btn-notification-bell"
       >
-        <span className="text-lg leading-none" aria-hidden="true">🔔</span>
+        <Bell size={18} aria-hidden="true" />
         {unreadCount > 0 && (
           <span
             className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-lg animate-pulse"

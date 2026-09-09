@@ -2,7 +2,9 @@
 
 import { useAuth } from "@/lib/AuthContext";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import NotificationBell from "@/components/NotificationBell";
+import { BarChart3, Building2, CalendarDays, LogIn, LogOut, Settings, ShieldCheck, Users, Vote } from "lucide-react";
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -16,16 +18,16 @@ export default function Navbar() {
     <header className="navbar">
       <div className="container">
         <nav className="navbar-inner" aria-label="Main navigation">
-          <a href="/" className="navbar-brand" aria-label="ConvoAssemble home">
-            <div className="brand-icon" aria-hidden="true">🗳️</div>
+          <Link href="/" className="navbar-brand" aria-label="ConvoAssemble home">
+            <div className="brand-icon" aria-hidden="true"><Vote size={20} strokeWidth={2.2} /></div>
             <span className="brand-name">ConvoAssemble</span>
             <span className="brand-version">Enterprise</span>
-          </a>
+          </Link>
 
           <div className="navbar-nav" role="menubar">
             {/* Global Superadmin Link if user is superadmin */}
             {isSuperadmin && (
-              <a
+              <Link
                 href="/superadmin"
                 className={`nav-link ${pathname?.startsWith("/superadmin") ? "active" : ""}`}
                 style={{
@@ -34,44 +36,51 @@ export default function Navbar() {
                 }}
                 role="menuitem"
               >
-                <span className="nav-link-icon">👑</span> Superadmin
-              </a>
+                <ShieldCheck className="nav-link-icon" size={16} /> Superadmin
+              </Link>
             )}
 
-            <a
+            <Link
               href="/admin"
               className={`nav-link ${pathname === "/admin" ? "active" : ""}`}
               role="menuitem"
             >
-              <span className="nav-link-icon">📊</span> Dashboard
-            </a>
-            <a
+              <BarChart3 className="nav-link-icon" size={16} /> Dashboard
+            </Link>
+            <Link
               href="/admin/meetings"
               className={`nav-link ${pathname?.startsWith("/admin/meetings") && pathname !== "/admin/meetings/new" ? "active" : ""}`}
               role="menuitem"
             >
-              <span className="nav-link-icon">📅</span> Asambleas
-            </a>
-            <a
+              <CalendarDays className="nav-link-icon" size={16} /> Asambleas
+            </Link>
+            <Link
+              href="/admin/vote"
+              className={`nav-link ${pathname === "/admin/vote" ? "active" : ""}`}
+              role="menuitem"
+            >
+              <Vote className="nav-link-icon" size={16} /> Votar
+            </Link>
+            <Link
               href="/admin/members"
               className={`nav-link ${pathname === "/admin/members" ? "active" : ""}`}
               role="menuitem"
             >
-              <span className="nav-link-icon">👥</span> Miembros
-            </a>
+              <Users className="nav-link-icon" size={16} /> Miembros
+            </Link>
             <a
               href="/admin/settings"
               className={`nav-link ${pathname === "/admin/settings" ? "active" : ""}`}
               role="menuitem"
             >
-              <span className="nav-link-icon">⚙️</span> Ajustes
+              <Settings className="nav-link-icon" size={16} /> Ajustes
             </a>
           </div>
 
           <div className="navbar-actions">
-            <a href="/admin/meetings/new" className="btn btn-primary btn-sm" id="btn-new-meeting">
+              <Link href="/admin/meetings/new" className="btn btn-primary btn-sm" id="btn-new-meeting">
               ＋ Nueva Asamblea
-            </a>
+            </Link>
 
             <NotificationBell />
             <div className="nav-divider" aria-hidden="true" />
@@ -88,7 +97,7 @@ export default function Navbar() {
                   }}
                   title={user.email}
                 >
-                  {isSuperadmin ? "👑" : (user.email ?? "U").charAt(0).toUpperCase()}
+                  {isSuperadmin ? <ShieldCheck size={15} /> : (user.email ?? "U").charAt(0).toUpperCase()}
                 </div>
                 <span
                   className="text-xs font-mono text-muted"
@@ -101,13 +110,13 @@ export default function Navbar() {
                   onClick={() => signOut()}
                   title="Cerrar sesión"
                 >
-                  🚪 Salir
+                  <LogOut size={15} /> Salir
                 </button>
               </div>
             ) : (
-              <a href="/login" className="btn btn-secondary btn-sm" id="btn-login-nav">
-                🔐 Iniciar Sesión
-              </a>
+              <Link href="/login" className="btn btn-secondary btn-sm" id="btn-login-nav">
+                <LogIn size={15} /> Iniciar Sesión
+              </Link>
             )}
           </div>
         </nav>

@@ -3,20 +3,22 @@
 // TallyChart – animated vote progress bars
 // =============================================================================
 import { Tally } from "@/lib/useMotionTally";
+import { LoaderCircle, Vote } from "lucide-react";
 
 interface TallyChartProps {
   tally: Tally;
   isConnected: boolean;
   isLoading: boolean;
+  isRealtime?: boolean;
 }
 
 const VOTE_OPTS = [
-  { key: "YES",     label: "Yes",     fillClass: "tally-fill-yes",     color: "#22c55e" },
-  { key: "NO",      label: "No",      fillClass: "tally-fill-no",      color: "#ef4444" },
-  { key: "ABSTAIN", label: "Abstain", fillClass: "tally-fill-abstain", color: "#94a3b8" },
+  { key: "YES",     label: "SÍ",          fillClass: "tally-fill-yes",     color: "#15803d" },
+  { key: "NO",      label: "NO",          fillClass: "tally-fill-no",      color: "#b91c1c" },
+  { key: "ABSTAIN", label: "ABSTENCIÓN", fillClass: "tally-fill-abstain", color: "#475569" },
 ] as const;
 
-export default function TallyChart({ tally, isConnected, isLoading }: TallyChartProps) {
+export default function TallyChart({ tally, isConnected, isLoading, isRealtime = true }: TallyChartProps) {
   const total = tally.total || 1; // avoid /0
 
   return (
@@ -24,18 +26,20 @@ export default function TallyChart({ tally, isConnected, isLoading }: TallyChart
       {/* Live indicator */}
       <div className="flex items-center justify-between mb-4">
         <span className="text-xs text-muted font-bold" style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          Live Vote Tally
+          Cuadro de Votos en Vivo
         </span>
         {isLoading ? (
           <span className="badge badge-draft">
-            <span className="spin" style={{ fontSize: "10px" }}>⟳</span> Loading
+            <LoaderCircle className="spin" size={12} /> Cargando
           </span>
-        ) : isConnected ? (
+        ) : isRealtime && isConnected ? (
           <span className="badge badge-live">
-            <span className="live-dot" /> Realtime
+            <span className="live-dot" /> Tiempo real
           </span>
+        ) : !isRealtime ? (
+          <span className="badge badge-draft">Resultados históricos</span>
         ) : (
-          <span className="badge badge-draft">⚪ Connecting…</span>
+          <span className="badge badge-draft">⚪ Conectando…</span>
         )}
       </div>
 
@@ -46,8 +50,8 @@ export default function TallyChart({ tally, isConnected, isLoading }: TallyChart
 
         return (
           <div key={key} className="tally-row">
-            <span className="tally-label" style={{ color }}>{label}</span>
-            <div className="tally-track" role="progressbar" aria-valuenow={count} aria-valuemax={tally.total} aria-label={`${label} votes`}>
+            <span className="tally-label" style={{ color, fontSize: "0.95rem", fontWeight: 800, letterSpacing: "0.03em" }}>{label}</span>
+            <div className="tally-track" role="progressbar" aria-valuenow={count} aria-valuemax={tally.total} aria-label={`${label} votos`}>
               <div
                 className={`tally-fill ${fillClass}`}
                 style={{ width: `${width}%` }}
@@ -55,7 +59,7 @@ export default function TallyChart({ tally, isConnected, isLoading }: TallyChart
             </div>
             <span className="tally-count" style={{ color }}>
               {count}
-              <span style={{ color: "var(--color-text-muted)", fontSize: "0.7rem", marginLeft: "2px" }}>
+              <span style={{ color: "var(--text-2)", fontSize: "0.8rem", marginLeft: "2px", fontWeight: 700 }}>
                 {tally.total > 0 ? ` (${pct}%)` : ""}
               </span>
             </span>
@@ -64,9 +68,9 @@ export default function TallyChart({ tally, isConnected, isLoading }: TallyChart
       })}
 
       <div className="tally-total">
-        <span>🗳️</span>
+          <Vote size={16} />
         <span>
-          <strong style={{ color: "var(--color-text)" }}>{tally.total}</strong> vote{tally.total !== 1 ? "s" : ""} cast
+          <strong style={{ color: "var(--text)" }}>{tally.total}</strong> voto{tally.total !== 1 ? "s" : ""} registrado{tally.total !== 1 ? "s" : ""}
         </span>
       </div>
     </div>

@@ -10,11 +10,11 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
 
   if (!requestedOrgId) {
     // For global superadmins without specific org assigned, return the first active org
-    const defaultOrg = await prisma.organization.findFirst({ orderBy: { createdAt: "asc" } });
+    const defaultOrg = await prisma.organization.findFirst({ where: { isActive: true }, orderBy: { createdAt: "asc" } });
     return res.json({ data: defaultOrg });
   }
 
-  const org = await prisma.organization.findUnique({ where: { id: requestedOrgId } });
+  const org = await prisma.organization.findFirst({ where: { id: requestedOrgId, isActive: true } });
   return res.json({ data: org });
 });
 

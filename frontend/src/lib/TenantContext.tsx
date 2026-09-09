@@ -8,6 +8,7 @@ export interface Organization {
   name: string;
   address?: string;
   settings?: any;
+  isActive?: boolean;
 }
 
 interface TenantContextType {
@@ -43,7 +44,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${api}/api/v1/superadmin/organizations`, { headers });
       if (res.ok) {
         const json = await res.json();
-        const orgs = json.data ?? [];
+        const orgs = (json.data ?? []).filter((org: Organization) => org.isActive !== false);
         setAllOrgs(orgs);
 
         // Check if query param or stored preference exists

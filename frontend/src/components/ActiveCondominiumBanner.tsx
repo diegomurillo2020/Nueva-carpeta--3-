@@ -2,6 +2,7 @@
 
 import { useTenant } from "@/lib/TenantContext";
 import { useAuth } from "@/lib/AuthContext";
+import { Building2, MapPin } from "lucide-react";
 
 export default function ActiveCondominiumBanner({ subtitle }: { subtitle?: string }) {
   const { activeOrg, allOrgs, setActiveOrgId, loading } = useTenant();
@@ -46,7 +47,7 @@ export default function ActiveCondominiumBanner({ subtitle }: { subtitle?: strin
               flexShrink: 0,
             }}
           >
-            🏢
+            <Building2 size={21} />
           </div>
 
           <div>
@@ -56,11 +57,11 @@ export default function ActiveCondominiumBanner({ subtitle }: { subtitle?: strin
               </span>
               <span className="text-xs font-mono text-muted">ID: {activeOrg.id.slice(0, 8)}…</span>
             </div>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#fff", marginTop: "0.15rem" }}>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#020101", marginTop: "0.15rem" }}>
               {activeOrg.name}
             </h2>
             {activeOrg.address && (
-              <p className="text-xs text-muted">📍 {activeOrg.address}</p>
+              <p className="text-xs text-muted"><MapPin size={13} /> {activeOrg.address}</p>
             )}
             {subtitle && <p className="text-xs text-accent mt-1">{subtitle}</p>}
           </div>
@@ -75,8 +76,8 @@ export default function ActiveCondominiumBanner({ subtitle }: { subtitle?: strin
               style={{
                 fontSize: "0.82rem",
                 padding: "0.4rem 0.75rem",
-                background: "rgba(6,10,18,0.8)",
-                borderColor: "rgba(99,102,241,0.4)",
+                background: "rgba(253, 253, 253, 0.8)",
+                borderColor: "rgba(9, 11, 100, 0.4)",
                 color: "var(--accent-3)",
                 fontWeight: 600,
                 width: "auto",
@@ -86,7 +87,7 @@ export default function ActiveCondominiumBanner({ subtitle }: { subtitle?: strin
             >
               {allOrgs.map((org) => (
                 <option key={org.id} value={org.id}>
-                  🏢 {org.name}
+                  {org.name}
                 </option>
               ))}
             </select>

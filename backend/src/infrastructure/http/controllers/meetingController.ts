@@ -4,8 +4,9 @@
 // =============================================================================
 import { Router, Request, Response } from "express";
 import { z } from "zod";
-import { authenticate, requireAdmin, AuthenticatedRequest, getOrCreateDefaultOrg } from "../middleware/auth";
+import { authenticate, requireAdmin, requireSuperadmin, AuthenticatedRequest, getOrCreateDefaultOrg } from "../middleware/auth";
 import { validate } from "../middleware/validate";
+import { prisma } from "../../database/prismaClient";
 import {
   createMeetingUC,
   updateMeetingStatusUC,
@@ -24,6 +25,7 @@ const CreateMeetingSchema = z.object({
 const UpdateStatusSchema = z.object({
   status:            z.enum(["LIVE", "CLOSED"]),
   transcriptSummary: z.string().optional(),
+  organizationId:   z.string().uuid().optional(),
 });
 
 async function resolveOrgId(req: Request): Promise<string> {
@@ -58,10 +60,17 @@ router.get("/:id", authenticate, async (req: Request, res: Response) => {
 router.get("/:id/motions", authenticate, async (req: Request, res: Response) => {
   const motions = await motionRepo.findByMeeting(req.params.id);
   const withTally = await Promise.all(
-    motions.map(async (m) => ({
-      ...m,
-      tally: await voteRepo.tallyByMotion(m.id),
-    }))
+    motions.map(async (m) => {
+      const tallyRows = await voteRepo.tallyByMotion(m.id);
+      const tally = { YES: 0, NO: 0, ABSTAIN: 0, total: 0 };
+      for (const row of tallyRows) {
+        if (row.choice in tally) {
+          tally[row.choice as "YES" | "NO" | "ABSTAIN"] = row.count;
+          tally.total += row.count;
+        }
+      }
+      return { ...m, tally };
+    })
   );
   res.json({ data: withTally });
 });
@@ -83,6 +92,21 @@ router.patch("/:id/status", authenticate, requireAdmin, validate(UpdateStatusSch
     transcriptSummary: req.body.transcriptSummary,
   });
   res.json({ data: meeting });
+});
+
+// DELETE /api/v1/meetings/:id – restricted to global superadmins
+router.delete("/:id", authenticate, requireSuperadmin, async (req: Request, res: Response) => {
+  const organizationId = await resolveOrgId(req);
+  const deleted = await prisma.meeting.deleteMany({
+    where: { id: req.params.id, organizationId },
+  });
+
+  if (deleted.count === 0) {
+    res.status(404).json({ error: "NOT_FOUND", message: "Meeting not found." });
+    return;
+  }
+
+  res.json({ success: true, message: "Asamblea eliminada permanentemente." });
 });
 
 export default router;

@@ -1,7 +1,9 @@
 import { Router, Request, Response } from "express";
+import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../database/prismaClient";
 import { authenticate, requireSuperadmin, AuthenticatedRequest } from "../middleware/auth";
-import { BadRequestError, NotFoundError } from "../../../shared/errors/AppErrors";
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../../../shared/errors/AppErrors";
 
 const router = Router();
 
@@ -106,7 +108,7 @@ router.post("/organizations", async (req: Request, res: Response) => {
 
 // Update organization
 router.patch("/organizations/:id", async (req: Request, res: Response) => {
-  const { name, address, settings } = req.body;
+  const { name, address, settings, isActive } = req.body;
 
   const org = await prisma.organization.update({
     where: { id: req.params.id },
@@ -114,6 +116,7 @@ router.patch("/organizations/:id", async (req: Request, res: Response) => {
       ...(name && { name: name.trim() }),
       ...(address !== undefined && { address: address ? address.trim() : null }),
       ...(settings && { settings }),
+      ...(typeof isActive === "boolean" && { isActive }),
     },
   });
 
@@ -201,6 +204,42 @@ router.post("/roles/:roleId/permissions", async (req: Request, res: Response) =>
 // 4. GLOBAL USERS DIRECTORY & ROLE ASSIGNMENT
 // =============================================================================
 
+const UserCreateSchema = z.object({
+  fullName: z.string().trim().min(1).max(255),
+  email: z.string().trim().email().optional().or(z.literal("")),
+  dniPassport: z.string().trim().max(100).optional().or(z.literal("")),
+  phoneNumber: z.string().trim().max(50).optional().or(z.literal("")),
+  roleId: z.string().uuid(),
+  organizationId: z.string().uuid().nullable().optional(),
+  isActive: z.boolean().optional(),
+});
+
+const UserUpdateSchema = UserCreateSchema.partial();
+
+function normalizeUserCreateInput(input: z.infer<typeof UserCreateSchema>): Prisma.UserUncheckedCreateInput {
+  return {
+    fullName: input.fullName,
+    email: input.email || null,
+    dniPassport: input.dniPassport || null,
+    phoneNumber: input.phoneNumber || null,
+    roleId: input.roleId,
+    organizationId: input.organizationId ?? null,
+    isActive: input.isActive ?? true,
+  };
+}
+
+function normalizeUserUpdateInput(input: Partial<z.infer<typeof UserCreateSchema>>): Prisma.UserUncheckedUpdateInput {
+  return {
+    ...(input.fullName !== undefined && { fullName: input.fullName }),
+    ...(input.email !== undefined && { email: input.email || null }),
+    ...(input.dniPassport !== undefined && { dniPassport: input.dniPassport || null }),
+    ...(input.phoneNumber !== undefined && { phoneNumber: input.phoneNumber || null }),
+    ...(input.roleId !== undefined && { roleId: input.roleId }),
+    ...(input.organizationId !== undefined && { organizationId: input.organizationId }),
+    ...(input.isActive !== undefined && { isActive: input.isActive }),
+  };
+}
+
 // List all users globally
 router.get("/users", async (_req: Request, res: Response) => {
   const users = await prisma.user.findMany({
@@ -214,28 +253,71 @@ router.get("/users", async (_req: Request, res: Response) => {
   res.json({ success: true, data: users });
 });
 
-// Change user role or reassign organization
-router.patch("/users/:id", async (req: Request, res: Response) => {
-  const { roleId, organizationId, isActive } = req.body;
-
-  const user = await prisma.user.update({
+// Get one user
+router.get("/users/:id", async (req: Request, res: Response) => {
+  const user = await prisma.user.findUnique({
     where: { id: req.params.id },
-    data: {
-      ...(roleId && { roleId }),
-      ...(organizationId !== undefined && { organizationId }),
-      ...(isActive !== undefined && { isActive }),
-    },
-    include: {
-      role: true,
-      organization: true,
-    },
+    include: { role: true, organization: { select: { id: true, name: true } } },
   });
+  if (!user) throw new NotFoundError("User", req.params.id);
+  res.json({ success: true, data: user });
+});
 
-  res.json({
-    success: true,
-    message: `Usuario "${user.fullName}" actualizado exitosamente.`,
-    data: user,
-  });
+// Create a global user/member
+router.post("/users", async (req: Request, res: Response) => {
+  const parsed = UserCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new BadRequestError(parsed.error.issues.map((issue) => issue.message).join(" "));
+  }
+
+  try {
+    const user = await prisma.user.create({
+      data: normalizeUserCreateInput(parsed.data),
+      include: { role: true, organization: { select: { id: true, name: true } } },
+    });
+    res.status(201).json({ success: true, message: `Usuario "${user.fullName}" creado exitosamente.`, data: user });
+  } catch (error: any) {
+    if (error?.code === "P2002") throw new ConflictError("El correo o documento ya está registrado.");
+    throw error;
+  }
+});
+
+// Update all editable user data
+router.patch("/users/:id", async (req: Request, res: Response) => {
+  const parsed = UserUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new BadRequestError(parsed.error.issues.map((issue) => issue.message).join(" "));
+  }
+
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: normalizeUserUpdateInput(parsed.data),
+      include: { role: true, organization: { select: { id: true, name: true } } },
+    });
+
+    res.json({ success: true, message: `Usuario "${user.fullName}" actualizado exitosamente.`, data: user });
+  } catch (error: any) {
+    if (error?.code === "P2025") throw new NotFoundError("User", req.params.id);
+    if (error?.code === "P2002") throw new ConflictError("El correo o documento ya está registrado.");
+    throw error;
+  }
+});
+
+// Delete a user. The current superadmin cannot delete their own account.
+router.delete("/users/:id", async (req: Request, res: Response) => {
+  const auth = (req as AuthenticatedRequest).auth;
+  if (auth.userId === req.params.id) {
+    throw new ForbiddenError("No puedes eliminar tu propia cuenta de superadministrador.");
+  }
+
+  try {
+    const user = await prisma.user.delete({ where: { id: req.params.id } });
+    res.json({ success: true, message: `Usuario "${user.fullName}" eliminado exitosamente.` });
+  } catch (error: any) {
+    if (error?.code === "P2025") throw new NotFoundError("User", req.params.id);
+    throw error;
+  }
 });
 
 export default router;

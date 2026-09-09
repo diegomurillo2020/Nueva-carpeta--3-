@@ -3,6 +3,7 @@
 import { useAuth } from "@/lib/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Link from "next/link";
 
 export default function SuperadminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -14,11 +15,12 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
     (user?.user_metadata?.role === "SUPERADMIN");
 
   useEffect(() => {
-    // If not loading and not superadmin, notify or handle
-    if (!loading && user && !isSuperadmin) {
-      console.warn("[Superadmin] Non-superadmin user attempting access to superadmin portal.");
+    if (!loading && !user) {
+      router.replace(`/login?next=${encodeURIComponent(pathname || "/superadmin")}`);
+    } else if (!loading && user && !isSuperadmin) {
+      router.replace("/admin");
     }
-  }, [user, loading, isSuperadmin]);
+  }, [user, loading, isSuperadmin, pathname, router]);
 
   const NAV = [
     { href: "/superadmin", label: "📊 Resumen Global", exact: true },
@@ -51,9 +53,9 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
             <span className="text-xs text-muted font-mono">
               Operando como: <strong style={{ color: "#fff" }}>diegodanielalejomurillo@gmail.com</strong>
             </span>
-            <a href="/admin" className="btn btn-ghost btn-sm text-xs" style={{ padding: "0.2rem 0.5rem" }}>
+            <Link href="/admin" className="btn btn-ghost btn-sm text-xs" style={{ padding: "0.2rem 0.5rem" }}>
               ← Ir a Vista de Condominio
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -64,14 +66,14 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
           {NAV.map((item) => {
             const active = item.exact ? pathname === item.href : pathname?.startsWith(item.href);
             return (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 className={`btn btn-sm ${active ? "btn-primary" : "btn-secondary"}`}
                 style={{ borderRadius: "var(--r-md)" }}
               >
                 {item.label}
-              </a>
+              </Link>
             );
           })}
         </div>

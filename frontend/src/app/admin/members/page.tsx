@@ -143,6 +143,7 @@ export default function MembersPage() {
       const res = await fetch(`${api}/api/v1/members/${member.id}/reset-password`, {
         method: "POST",
         headers: getAuthHeaders(),
+        body: JSON.stringify({ organizationId: activeOrg?.id }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Error al resetear contraseña.");

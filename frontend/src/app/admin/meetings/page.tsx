@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
+import { useTenant } from "@/lib/TenantContext";
 
 interface Meeting {
   id: string;
@@ -28,22 +29,40 @@ const fmt = (iso?: string) =>
     : "—";
 
 export default function MeetingsListPage() {
-  const { getAuthHeaders, loading: authLoading } = useAuth();
+  const { getAuthHeaders, user, loading: authLoading } = useAuth();
+  const { activeOrg, loading: tenantLoading } = useTenant();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"ALL" | "LIVE" | "DRAFT" | "CLOSED">("ALL");
   const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || tenantLoading || !activeOrg?.id) return;
 
-    fetch(`${api}/api/v1/meetings`, { headers: getAuthHeaders() })
+    fetch(`${api}/api/v1/meetings?orgId=${encodeURIComponent(activeOrg.id)}`, { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((b) => setMeetings(b.data ?? []))
       .finally(() => setLoading(false));
-  }, [api, authLoading]);
+  }, [api, authLoading, tenantLoading, activeOrg?.id]);
 
   const filtered = filter === "ALL" ? meetings : meetings.filter((m) => m.status === filter);
+  const isSuperadmin =
+    user?.email?.toLowerCase() === "diegodanielalejomurillo@gmail.com" ||
+    user?.user_metadata?.role === "SUPERADMIN";
+
+  const handleDeleteMeeting = async (meeting: Meeting) => {
+    if (!activeOrg?.id || !window.confirm(`¿Eliminar permanentemente la asamblea "${meeting.title}" y todos sus votos?`)) return;
+    const response = await fetch(`${api}/api/v1/meetings/${meeting.id}?orgId=${encodeURIComponent(activeOrg.id)}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      window.alert(body.message || "No se pudo eliminar la asamblea.");
+      return;
+    }
+    setMeetings((current) => current.filter((item) => item.id !== meeting.id));
+  };
 
   return (
     <div className="container">
@@ -119,6 +138,15 @@ export default function MeetingsListPage() {
                 <div className="meeting-card-footer">
                   <span className="font-mono text-xs text-muted">{m.id.slice(0, 8)}…</span>
                   <span className="text-xs text-accent">Entrar a Sala →</span>
+                  {isSuperadmin && (
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      onClick={(event) => { event.preventDefault(); event.stopPropagation(); void handleDeleteMeeting(m); }}
+                    >
+                      Eliminar
+                    </button>
+                  )}
                 </div>
               </a>
             );

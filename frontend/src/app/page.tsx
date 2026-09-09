@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BarChart3, Building2, Check, FileText, LockKeyhole, MessageCircle, Vote, Zap } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "ConvoAssemble — Smart Digital Voting for HOAs",
@@ -6,12 +7,12 @@ export const metadata: Metadata = {
 };
 
 const FEATURES = [
-  { icon: "⚡", title: "Realtime Vote Tallies", text: "Every vote synced instantly across all admin screens via Supabase Realtime — no refresh needed." },
-  { icon: "🔒", title: "Fraud-Proof Voting", text: "Database-level unique constraint prevents double voting. Row-Level Security isolates each tenant." },
-  { icon: "📊", title: "Quorum Calculator", text: "Configurable quorum rules per organization — coefficient-based (alícuota) or headcount majority." },
-  { icon: "📱", title: "WhatsApp & Telegram", text: "Members vote via WhatsApp or Telegram messages. No app download required." },
-  { icon: "📝", title: "Auto Meeting Minutes", text: "Structured transcript summaries generated automatically from motion results." },
-  { icon: "🏢", title: "Multi-Tenant SaaS", text: "Manage multiple condominiums from a single platform with full data isolation." },
+  { icon: Zap, title: "Realtime Vote Tallies", text: "Every vote synced instantly across all admin screens via Supabase Realtime — no refresh needed." },
+  { icon: LockKeyhole, title: "Fraud-Proof Voting", text: "Database-level unique constraint prevents double voting. Row-Level Security isolates each tenant." },
+  { icon: BarChart3, title: "Quorum Calculator", text: "Configurable quorum rules per organization — coefficient-based (alícuota) or headcount majority." },
+  { icon: MessageCircle, title: "WhatsApp & Telegram", text: "Members vote via WhatsApp or Telegram messages. No app download required." },
+  { icon: FileText, title: "Auto Meeting Minutes", text: "Structured transcript summaries generated automatically from motion results." },
+  { icon: Building2, title: "Multi-Tenant SaaS", text: "Manage multiple condominiums from a single platform with full data isolation." },
 ];
 
 export default function HomePage() {
@@ -21,7 +22,7 @@ export default function HomePage() {
       <section className="hero" aria-labelledby="hero-title">
         <div className="hero-glow" aria-hidden="true" />
         <div className="hero-label">
-          <span>🚀</span> Now in Beta — Task 3 / 5 Complete
+          Now in Beta - Task 3 / 5 Complete
         </div>
         <h1 className="hero-title" id="hero-title">
           Smart Voting for<br />Modern Communities
@@ -32,7 +33,7 @@ export default function HomePage() {
         </p>
         <div className="hero-actions">
           <a href="/admin" className="btn btn-primary btn-xl" id="btn-go-dashboard">
-            🗳️ Open Dashboard
+            <Vote size={18} /> Open Dashboard
           </a>
           <a href="/admin/meetings/new" className="btn btn-secondary btn-xl" id="btn-create-meeting-hero">
             ＋ Create Meeting
@@ -53,7 +54,7 @@ export default function HomePage() {
         <div className="features-grid">
           {FEATURES.map((f) => (
             <div key={f.title} className="card card-hover feature-card">
-              <div className="feature-icon">{f.icon}</div>
+              <div className="feature-icon"><f.icon size={22} /></div>
               <div>
                 <h3 className="feature-title">{f.title}</h3>
                 <p className="feature-text mt-2">{f.text}</p>
@@ -68,9 +69,7 @@ export default function HomePage() {
         <div className="card card-accent card-p-lg">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h2 style={{ fontWeight:800, fontSize:"1.25rem", marginBottom:"0.375rem" }}>
-                🏗️ Build Progress
-              </h2>
+              <h2 style={{ fontWeight:800, fontSize:"1.25rem", marginBottom:"0.375rem" }}>Build Progress</h2>
               <p className="text-sm text-muted">SDD Task execution — 3 of 5 complete</p>
             </div>
             <div className="flex gap-3 flex-wrap">
@@ -82,7 +81,7 @@ export default function HomePage() {
                 { label:"Dashboard",  done:false },
               ].map((t) => (
                 <span key={t.label} className={`badge ${t.done ? "badge-success" : "badge-draft"}`}>
-                  {t.done ? "✅" : "⏳"} {t.label}
+                  {t.done && <Check size={13} />} {t.label}
                 </span>
               ))}
             </div>

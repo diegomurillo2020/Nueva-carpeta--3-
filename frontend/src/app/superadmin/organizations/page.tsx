@@ -9,6 +9,7 @@ interface Organization {
   address?: string;
   settings: any;
   createdAt: string;
+  isActive: boolean;
   _count: {
     users: number;
     properties: number;
@@ -28,6 +29,45 @@ export default function SuperadminOrganizationsPage() {
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const updateOrganizationStatus = async (org: Organization) => {
+    const action = org.isActive ? "dar de baja temporalmente" : "reactivar";
+    if (!window.confirm(`¿Deseas ${action} el condominio "${org.name}"?`)) return;
+
+    try {
+      const response = await fetch(`${api}/api/v1/superadmin/organizations/${org.id}`, {
+        method: "PATCH",
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !org.isActive }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.message || "No se pudo actualizar el estado.");
+      showToast(org.isActive ? "Condominio dado de baja temporalmente." : "Condominio reactivado.");
+      fetchOrgs();
+    } catch (error: unknown) {
+      showToast(`⚠️ ${error instanceof Error ? error.message : "No se pudo actualizar el condominio."}`);
+    }
+  };
+
+  const deleteOrganization = async (org: Organization) => {
+    const confirmation = window.prompt(
+      `Esta acción eliminará permanentemente "${org.name}" y sus datos relacionados. Escribe ELIMINAR para continuar.`
+    );
+    if (confirmation !== "ELIMINAR") return;
+
+    try {
+      const response = await fetch(`${api}/api/v1/superadmin/organizations/${org.id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.message || "No se pudo eliminar el condominio.");
+      showToast("Condominio eliminado permanentemente.");
+      fetchOrgs();
+    } catch (error: unknown) {
+      showToast(`⚠️ ${error instanceof Error ? error.message : "No se pudo eliminar el condominio."}`);
+    }
   };
 
   const fetchOrgs = () => {
@@ -88,6 +128,7 @@ export default function SuperadminOrganizationsPage() {
             <thead>
               <tr>
                 <th>Condominio</th>
+                <th>Estado</th>
                 <th>Dirección</th>
                 <th>Usuarios</th>
                 <th>Unidades</th>
@@ -110,6 +151,11 @@ export default function SuperadminOrganizationsPage() {
                       </div>
                     </div>
                   </td>
+                  <td>
+                    <span className={`badge ${org.isActive ? "badge-success" : "badge-closed"}`}>
+                      {org.isActive ? "Activo" : "Baja temporal"}
+                    </span>
+                  </td>
                   <td className="text-sm text-muted">{org.address || "—"}</td>
                   <td className="font-mono text-sm">{org._count.users}</td>
                   <td className="font-mono text-sm">{org._count.properties}</td>
@@ -117,16 +163,18 @@ export default function SuperadminOrganizationsPage() {
                   <td className="td-mono">{new Date(org.createdAt).toLocaleDateString("es-ES")}</td>
                   <td>
                     <div className="flex gap-2">
-                      <a href={`/admin?orgId=${org.id}`} className="btn btn-secondary btn-sm">
-                        Entrar
-                      </a>
+                      {org.isActive && <a href={`/admin?orgId=${org.id}`} className="btn btn-secondary btn-sm">Entrar</a>}
+                      <button className={`btn btn-sm ${org.isActive ? "btn-danger" : "btn-success"}`} onClick={() => updateOrganizationStatus(org)}>
+                        {org.isActive ? "Dar de baja" : "Reactivar"}
+                      </button>
+                      <button className="btn btn-danger btn-sm" onClick={() => deleteOrganization(org)}>Eliminar</button>
                     </div>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "3rem", color: "var(--text-3)" }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: "3rem", color: "var(--text-3)" }}>
                     No se encontraron condominios que coincidan con &quot;{search}&quot;
                   </td>
                 </tr>

@@ -4,6 +4,7 @@ import ConnectionTest from "@/components/ConnectionTest";
 import ActiveCondominiumBanner from "@/components/ActiveCondominiumBanner";
 import { useAuth } from "@/lib/AuthContext";
 import { useTenant } from "@/lib/TenantContext";
+import { CalendarDays, CheckCircle2, Circle, CircleAlert, Settings, Users, Vote } from "lucide-react";
 
 interface Meeting {
   id: string;
@@ -14,9 +15,9 @@ interface Meeting {
 }
 
 const STATUS = {
-  LIVE: { badge: "badge-live", icon: "🟢", label: "EN VIVO" },
-  DRAFT: { badge: "badge-draft", icon: "🔘", label: "Borrador" },
-  CLOSED: { badge: "badge-closed", icon: "🔴", label: "Finalizada" },
+  LIVE: { badge: "badge-live", label: "EN VIVO" },
+  DRAFT: { badge: "badge-draft", label: "Borrador" },
+  CLOSED: { badge: "badge-closed", label: "Finalizada" },
 };
 
 function fmt(iso?: string) {
@@ -80,11 +81,14 @@ export default function AdminPage() {
           <a href="/admin/meetings/new" className="btn btn-primary" id="btn-create-meeting-dash">
             ＋ Nueva Asamblea
           </a>
+          <a href="/admin/vote" className="btn btn-success">
+            <Vote size={16} /> Votar ahora
+          </a>
           <a href="/admin/members" className="btn btn-secondary">
-            👥 Miembros
+            <Users size={16} /> Miembros
           </a>
           <a href="/admin/settings" className="btn btn-secondary">
-            ⚙️ Ajustes
+            <Settings size={16} /> Ajustes
           </a>
         </div>
       </div>
@@ -98,24 +102,24 @@ export default function AdminPage() {
       <section aria-label="Statistics" className="mb-8">
         <div className="stat-grid">
           <div className="card card-hover stat-card">
-            <div className="stat-icon">📅</div>
+            <div className="stat-icon"><CalendarDays size={24} /></div>
             <div className="stat-value">{loading ? "—" : meetings.length}</div>
             <div className="stat-label">Total Asambleas</div>
           </div>
           <div className="card card-hover stat-card">
-            <div className="stat-icon">🟢</div>
+            <div className="stat-icon"><Circle size={24} /></div>
             <div className="stat-value" style={{ color: "var(--emerald)" }}>
               {loading ? "—" : live}
             </div>
             <div className="stat-label">En Vivo Ahora</div>
           </div>
           <div className="card card-hover stat-card">
-            <div className="stat-icon">🔘</div>
+            <div className="stat-icon"><Circle size={24} /></div>
             <div className="stat-value">{loading ? "—" : drafts}</div>
             <div className="stat-label">Borradores</div>
           </div>
           <div className="card card-hover stat-card">
-            <div className="stat-icon">✅</div>
+            <div className="stat-icon"><CheckCircle2 size={24} /></div>
             <div className="stat-value">{loading ? "—" : closed}</div>
             <div className="stat-label">Finalizadas</div>
           </div>
@@ -145,7 +149,7 @@ export default function AdminPage() {
           </div>
         ) : error ? (
           <div className="card card-p">
-            <p className="text-danger">⚠️ {error}</p>
+            <p className="text-danger"><CircleAlert size={16} /> {error}</p>
             <p className="text-sm text-muted mt-2">
               Backend: <code>{api}</code>
             </p>
@@ -179,7 +183,7 @@ export default function AdminPage() {
                   </div>
                   <div className="meeting-card-title">{m.title}</div>
                   <div className="meeting-card-footer">
-                    <span className="text-xs text-muted">🕐 {m.startTime ? fmt(m.startTime) : "No iniciada"}</span>
+                    <span className="text-xs text-muted">{m.startTime ? fmt(m.startTime) : "No iniciada"}</span>
                     <span className="text-xs text-accent">Entrar a Sala →</span>
                   </div>
                 </a>

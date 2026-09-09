@@ -25,9 +25,9 @@ export class OpenMotionUseCase {
     const meeting = await this.meetingRepo.findById(dto.meetingId, dto.organizationId);
     if (!meeting) throw new NotFoundError("Meeting", dto.meetingId);
 
-    if (!meeting.isLive()) {
+    if (meeting.isClosed()) {
       throw new UnprocessableError(
-        `Cannot open a motion on a meeting with status '${meeting.status}'. Meeting must be LIVE.`
+        `Cannot create a motion on a meeting with status '${meeting.status}'.`
       );
     }
 

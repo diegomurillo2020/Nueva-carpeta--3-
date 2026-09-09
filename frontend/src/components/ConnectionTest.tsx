@@ -5,6 +5,7 @@
 // =============================================================================
 import { useState, useCallback } from "react";
 import { testConnection, ConnectionTestResult } from "@/lib/supabase";
+import { CheckCircle2, CircleAlert, Database, Globe2, LoaderCircle, PlugZap, UserRound, Zap } from "lucide-react";
 
 type TestState = "idle" | "loading" | "ok" | "error";
 
@@ -29,7 +30,7 @@ export default function ConnectionTest() {
     <div className="glass-card conn-test-card">
       <div className="conn-test-header">
         <h3 className="conn-test-title">
-          <span>🔌</span>
+          <PlugZap size={18} />
           Supabase Connection Test
         </h3>
         <button
@@ -41,12 +42,12 @@ export default function ConnectionTest() {
         >
           {state === "loading" ? (
             <>
-              <span className="spin">⟳</span>
+              <LoaderCircle className="spin" size={15} />
               Testing…
             </>
           ) : (
             <>
-              ⚡ Test Connection
+              <Zap size={15} /> Test Connection
             </>
           )}
         </button>
@@ -54,23 +55,23 @@ export default function ConnectionTest() {
 
       {/* Connection metadata */}
       <div className="conn-meta">
-        <span className="conn-meta-item">🌐 <strong>Host:</strong> aws-0-us-east-1.pooler.supabase.com</span>
-        <span className="conn-meta-item">🗄️  <strong>DB:</strong> postgres</span>
-        <span className="conn-meta-item">👤 <strong>User:</strong> postgres.wrerlobbajyabhljfqgo</span>
-        <span className="conn-meta-item">🔢 <strong>Port:</strong> 5432</span>
+        <span className="conn-meta-item"><Globe2 size={14} /> <strong>Host:</strong> aws-0-us-east-1.pooler.supabase.com</span>
+        <span className="conn-meta-item"><Database size={14} /> <strong>DB:</strong> postgres</span>
+        <span className="conn-meta-item"><UserRound size={14} /> <strong>User:</strong> postgres.wrerlobbajyabhljfqgo</span>
+        <span className="conn-meta-item"><Database size={14} /> <strong>Port:</strong> 5432</span>
       </div>
 
       {/* Result panel */}
       {state === "loading" && (
         <div className="conn-result conn-result-loading" role="status">
-          <span className="spin">⟳</span>
+          <LoaderCircle className="spin" size={16} />
           Pinging <code>wrerlobbajyabhljfqgo.supabase.co</code>…
         </div>
       )}
 
       {state === "ok" && result && (
         <div className="conn-result conn-result-ok" role="status" aria-label="Connection successful">
-          ✅ <strong>Connected</strong> — {result.projectRef} responded in{" "}
+          <CheckCircle2 size={16} /> <strong>Connected</strong> - {result.projectRef} responded in{" "}
           <span style={{ fontWeight: 800 }}>{result.latencyMs} ms</span>
         </div>
       )}
@@ -78,7 +79,7 @@ export default function ConnectionTest() {
       {state === "error" && result && (
         <div role="alert">
           <div className="conn-result conn-result-err">
-            ❌ <strong>Failed</strong> — {result.error ?? "Unknown error"} ({result.latencyMs} ms)
+            <CircleAlert size={16} /> <strong>Failed</strong> - {result.error ?? "Unknown error"} ({result.latencyMs} ms)
           </div>
           <p className="text-xs text-muted mt-2" style={{ paddingLeft: "0.25rem" }}>
             Hint: Check that your <code>DATABASE_URL</code> password is set in <code>.env</code> and that Supabase RLS allows your query.
