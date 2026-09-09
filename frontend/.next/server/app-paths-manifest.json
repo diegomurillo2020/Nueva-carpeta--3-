@@ -1,7 +1,9 @@
 {
   "/admin/page": "app/admin/page.js",
   "/login/page": "app/login/page.js",
-  "/admin/meetings/page": "app/admin/meetings/page.js",
   "/admin/meetings/[id]/page": "app/admin/meetings/[id]/page.js",
-  "/admin/members/page": "app/admin/members/page.js"
+  "/admin/meetings/page": "app/admin/meetings/page.js",
+  "/admin/members/page": "app/admin/members/page.js",
+  "/admin/vote/page": "app/admin/vote/page.js",
+  "/admin/settings/page": "app/admin/settings/page.js"
 }
