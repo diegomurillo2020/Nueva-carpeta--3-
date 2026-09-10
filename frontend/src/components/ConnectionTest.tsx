@@ -26,48 +26,5 @@ export default function ConnectionTest() {
     }
   }, []);
 
-  return (
-    <div className="glass-card conn-test-card">
-      
-      {/* Connection metadata */}
-      <div className="conn-meta">
-        <span className="conn-meta-item"><Globe2 size={14} /> <strong>Host:</strong> aws-0-us-east-1.pooler.supabase.com</span>
-        <span className="conn-meta-item"><Database size={14} /> <strong>DB:</strong> postgres</span>
-        <span className="conn-meta-item"><UserRound size={14} /> <strong>User:</strong> postgres.wrerlobbajyabhljfqgo</span>
-        <span className="conn-meta-item"><Database size={14} /> <strong>Port:</strong> 5432</span>
-      </div>
-
-      {/* Result panel */}
-      {state === "loading" && (
-        <div className="conn-result conn-result-loading" role="status">
-          <LoaderCircle className="spin" size={16} />
-          Pinging <code>wrerlobbajyabhljfqgo.supabase.co</code>…
-        </div>
-      )}
-
-      {state === "ok" && result && (
-        <div className="conn-result conn-result-ok" role="status" aria-label="Connection successful">
-          <CheckCircle2 size={16} /> <strong>Connected</strong> - {result.projectRef} responded in{" "}
-          <span style={{ fontWeight: 800 }}>{result.latencyMs} ms</span>
-        </div>
-      )}
-
-      {state === "error" && result && (
-        <div role="alert">
-          <div className="conn-result conn-result-err">
-            <CircleAlert size={16} /> <strong>Failed</strong> - {result.error ?? "Unknown error"} ({result.latencyMs} ms)
-          </div>
-          <p className="text-xs text-muted mt-2" style={{ paddingLeft: "0.25rem" }}>
-            Hint: Check that your <code>DATABASE_URL</code> password is set in <code>.env</code> and that Supabase RLS allows your query.
-          </p>
-        </div>
-      )}
-
-      {state === "idle" && (
-        <p className="text-sm text-muted">
-          Click <strong>Test Connection</strong> to verify your Supabase cloud database is reachable.
-        </p>
-      )}
-    </div>
-  );
+  return ();
 }
